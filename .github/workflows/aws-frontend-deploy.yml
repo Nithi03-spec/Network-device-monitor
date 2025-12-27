@@ -2,7 +2,8 @@ name: Frontend CI/CD to AWS S3
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
 
 jobs:
   deploy:
