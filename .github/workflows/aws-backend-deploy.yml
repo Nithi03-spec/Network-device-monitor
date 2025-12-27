@@ -1,0 +1,39 @@
+name: Backend CI/CD to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Zip backend for deployment
+        run: |
+          cd backend
+          zip -r backend.zip .
+
+      - name: Deploy to AWS Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: Network-monitor
+          environment_name: network-monitor-backend-env
+          region: ap-south-1
+          version_label: github-${{ github.run_number }}
+          deployment_package: backend/backend.zip
