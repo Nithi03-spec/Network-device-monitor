@@ -2,30 +2,45 @@ name: Frontend CI/CD to AWS S3
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # 2️⃣ Show folder structure (debug)
+      - name: Show repository structure
+        run: |
+          echo "Repo root:"
+          ls -la
+          echo "frontend folder:"
+          ls -la frontend || echo "frontend folder NOT FOUND"
+
+      # 3️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: npm
 
+      # 4️⃣ Install frontend dependencies
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install
 
+      # 5️⃣ Build frontend
       - name: Build frontend
         working-directory: frontend
         run: npm run build
 
+      # 6️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,6 +48,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
+      # 7️⃣ Deploy to S3
       - name: Deploy to S3
         run: |
           aws s3 sync frontend/build s3://${{ secrets.AWS_S3_BUCKET }} --delete
