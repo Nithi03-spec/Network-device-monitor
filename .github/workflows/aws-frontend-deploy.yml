@@ -1,38 +1,62 @@
-name: Frontend CI/CD to AWS S3
+name: Frontend CI/CD (Safe Mode)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show repository structure (debug)
+        run: |
+          echo "Repo root:"
+          ls -la
+          echo "Frontend folder:"
+          ls -la frontend || echo "frontend folder NOT FOUND"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: npm
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
+      - name: Install frontend dependencies (SAFE)
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            echo "Found frontend/package.json"
+            cd frontend
+            npm install
+          elif [ -f "package.json" ]; then
+            echo "Found package.json in root"
+            npm install
+          else
+            echo "❌ No package.json found"
+            exit 1
+          fi
 
       - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            cd frontend
+            npm run build
+          else
+            npm run build
+          fi
 
       - name: Deploy to S3
-        run: |
-          aws s3 sync frontend/build s3://${{ secrets.AWS_S3_BUCKET }} --delete
+        uses: jakejarvis/s3-sync-action@v1
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-south-1
+          SOURCE_DIR: frontend/build
