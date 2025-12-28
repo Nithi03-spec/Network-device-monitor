@@ -14,9 +14,13 @@ function App() {
   const fetchDevices = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/devices`);
+            const filtered = res.data.filter(
+        (d) => d.name && d.ip && d.type
+      );
       // show only last 10 devices
-      const last10 = res.data.slice(-10).reverse();
+      const last10 = filtered.slice(-10).reverse();
       setDevices(last10);
+
     } catch (err) {
       console.error("Failed to fetch devices:", err);
     }
@@ -74,7 +78,7 @@ function App() {
 
       {/* Device List */}
       <div className="card">
-        <h3>Last 10 Devices</h3>
+        <h3>Devices</h3>
         <table>
           <thead>
             <tr>
