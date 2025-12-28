@@ -11,8 +11,7 @@ const Log = require("./models/Log");
 const app = express();
 
 // Middleware
-app.use(cors({ origin: [ "http://network-monitor-frontend.s3-website.ap-south-1.amazonaws.com", // your frontend
-    "http://localhost:3000"], methods: ["GET", "POST"], allowedHeaders: ["Content-Type"] }));
+app.use(cors({ origin: "*", methods: ["GET", "POST"], allowedHeaders: ["Content-Type"] }));
 app.use(express.json());
 
 // MongoDB connection
