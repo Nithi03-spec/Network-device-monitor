@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
   const [devices, setDevices] = useState([]);
@@ -7,9 +8,18 @@ function App() {
   const [ip, setIp] = useState("");
   const [type, setType] = useState("");
 
+  const BASE_URL =
+    "http://network-monitor-backend-env.eba-wrj6md2i.ap-south-1.elasticbeanstalk.com";
+
   const fetchDevices = async () => {
-    const res = await axios.get("http://localhost:5000/devices");
-    setDevices(res.data);
+    try {
+      const res = await axios.get(`${BASE_URL}/devices`);
+      // show only last 10 devices
+      const last10 = res.data.slice(-10).reverse();
+      setDevices(last10);
+    } catch (err) {
+      console.error("Failed to fetch devices:", err);
+    }
   };
 
   const addDevice = async () => {
@@ -18,16 +28,15 @@ function App() {
       return;
     }
 
-    await axios.post("http://localhost:5000/devices", {
-      name,
-      ip,
-      type
-    });
-
-    setName("");
-    setIp("");
-    setType("");
-    fetchDevices();
+    try {
+      await axios.post(`${BASE_URL}/devices`, { name, ip, type });
+      setName("");
+      setIp("");
+      setType("");
+      fetchDevices();
+    } catch (err) {
+      console.error("Failed to add device:", err);
+    }
   };
 
   useEffect(() => {
@@ -37,53 +46,66 @@ function App() {
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Network Device Monitor</h2>
+    <div className="container">
+      <h1>🌐 Network Device Monitor</h1>
 
-      <input
-        placeholder="Device Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+      {/* Add Device Card */}
+      <div className="card">
+        <h3>Add Device</h3>
+        <div className="form">
+          <input
+            placeholder="Device Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            placeholder="IP Address"
+            value={ip}
+            onChange={(e) => setIp(e.target.value)}
+          />
+          <input
+            placeholder="Type (Router / Server / Laptop)"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          />
+          <button onClick={addDevice}>Add</button>
+        </div>
+      </div>
 
-      <input
-        placeholder="IP Address"
-        value={ip}
-        onChange={(e) => setIp(e.target.value)}
-      />
-
-      <input
-        placeholder="Type (Router / Switch / Server)"
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-      />
-
-      <button onClick={addDevice}>Add Device</button>
-
-      <table border="1" cellPadding="10" style={{ marginTop: "20px" }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>IP</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Last Checked</th>
-          </tr>
-        </thead>
-        <tbody>
-          {devices.map((d) => (
-            <tr key={d._id}>
-              <td>{d.name}</td>
-              <td>{d.ip}</td>
-              <td>{d.type}</td>
-              <td style={{ color: d.status === "Online" ? "green" : "red" }}>
-                {d.status}
-              </td>
-              <td>{new Date(d.lastChecked).toLocaleTimeString()}</td>
+      {/* Device List */}
+      <div className="card">
+        <h3>Last 10 Devices</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>IP</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Last Checked</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {devices.map((d) => (
+              <tr key={d._id}>
+                <td>{d.name}</td>
+                <td>{d.ip}</td>
+                <td>{d.type}</td>
+                <td
+                  className={
+                    d.status === "Online" ? "status online" : "status offline"
+                  }
+                >
+                  {d.status}
+                </td>
+                <td>
+                  {new Date(d.lastChecked).toLocaleTimeString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
